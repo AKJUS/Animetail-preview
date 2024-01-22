@@ -53,22 +53,31 @@ jobs:
         run: |
           set -e
 
-          commit_count=$(git rev-list --count HEAD)
-          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_ENV
-          current_sha=$(git rev-parse HEAD)
-          echo "CURRENT_SHA=$current_sha" >> $GITHUB_ENV
           prev_commit_count=$(echo "${{ steps.last_release.outputs.tag_name }}" | sed -e "s/^r//")
+
+          # Verificar si prev_commit_count es una cadena no vacía y numérica
+          if [[ ! "$prev_commit_count" =~ ^[0-9]+$ ]]; then
+          echo "Error: prev_commit_count no es un número válido."
+          exit 1
+          fi
+
           commit_count_diff=$(expr $commit_count - $prev_commit_count)
-          [ $commit_count_diff != 0 ] || exit 1
+
+          # Verificar si commit_count_diff es diferente de 0
+          if [ $commit_count_diff -eq 0 ]; then
+          echo "Error: commit_count_diff es 0, no hay cambios desde la última versión."
+          exit 1
+          fi
+
           commit_count_diff_plus_one=$(expr $commit_count_diff + 1)
           prev_release_sha=$(git log --topo-order -n $commit_count_diff_plus_one --skip $commit_count_diff --max-count 1 --pretty=format:"%H")
           echo "PREV_RELEASE_SHA=$prev_release_sha" >> $GITHUB_ENV
 
           echo "COMMIT_LOGS<<{delimiter}
           $(curl -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/Dark25/Animetail2/compare/$prev_release_sha...$current_sha" \
-            | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
-            | jq -r '.[]|"- \(.message | first) (@\(.username))"')
+          "https://api.github.com/repos/Dark25/Animetail2/compare/$prev_release_sha...$current_sha" \
+          | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
+          | jq -r '.[]|"- \(.message | first) (@\(.username))"')
           {delimiter}" >> $GITHUB_ENV
 
       - name: Set ACRA properties
