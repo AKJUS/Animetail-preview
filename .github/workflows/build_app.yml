@@ -24,14 +24,14 @@ jobs:
       - name: Clone Repository (Latest)
         uses: actions/checkout@v4
         with:
-          repository: 'aniyomiorg/aniyomi'
+          repository: 'Dark25/Animetail2'
           fetch-depth: 0
         if: github.event.inputs.git-ref == ''
       - name: Clone Repository (Custom Ref)
         uses: actions/checkout@v4
         if: github.event.inputs.git-ref != ''
         with:
-          repository: 'aniyomiorg/aniyomi'
+          repository: 'Dark25/Animetail2'
           fetch-depth: 0
           ref: ${{ github.event.inputs.git-ref }}
 
@@ -66,7 +66,7 @@ jobs:
 
           echo "COMMIT_LOGS<<{delimiter}
           $(curl -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/aniyomiorg/aniyomi/compare/$prev_release_sha...$current_sha" \
+            "https://api.github.com/repos/Dark25/Animetail2/compare/$prev_release_sha...$current_sha" \
             | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
             | jq -r '.[]|"- \(.message | first) (@\(.username))"')
           {delimiter}" >> $GITHUB_ENV
@@ -106,23 +106,23 @@ jobs:
         run: |
           set -e
 
-          cp app/build/outputs/apk/standard/preview/app-standard-universal-preview-signed.apk aniyomi-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/standard/preview/app-standard-universal-preview-signed.apk animetail-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum aniyomi-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_UNIVERSAL_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-arm64-v8a-preview-signed.apk aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/standard/preview/app-standard-arm64-v8a-preview-signed.apk animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARM64_V8A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-armeabi-v7a-preview-signed.apk aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/standard/preview/app-standard-armeabi-v7a-preview-signed.apk animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARMEABI_V7A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-x86-preview-signed.apk aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/standard/preview/app-standard-x86-preview-signed.apk animetail-x86-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-x86_64-preview-signed.apk aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/standard/preview/app-standard-x86_64-preview-signed.apk animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_64_SHA=$sha" >> $GITHUB_ENV
 
@@ -134,7 +134,7 @@ jobs:
           body: |
             ### Commits
 
-            https://github.com/aniyomiorg/aniyomi/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
+            https://github.com/Dark25/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
 
             ${{ env.COMMIT_LOGS }}
 
@@ -150,11 +150,11 @@ jobs:
             | x86 | ${{ env.APK_X86_SHA }}
             | x86_64 | ${{ env.APK_X86_64_SHA }} |
           files: |
-            aniyomi-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk
+            animetail-r${{ env.COMMIT_COUNT }}.apk
+            animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
+            animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
+            animetail-x86-r${{ env.COMMIT_COUNT }}.apk
+            animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
           draft: ${{ github.event.inputs.dry-run != '' }}
           prerelease: false
         env:
