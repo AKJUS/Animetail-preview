@@ -52,6 +52,11 @@ jobs:
       - name: Prepare build
         run: |
           set -e
+          
+          commit_count=$(git rev-list --count HEAD)
+          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_ENV
+          current_sha=$(git rev-parse HEAD)
+          echo "CURRENT_SHA=$current_sha" >> $GITHUB_ENV
 
           prev_commit_count=$(echo "${{ steps.last_release.outputs.tag_name }}" | sed -e "s/^r//")
 
