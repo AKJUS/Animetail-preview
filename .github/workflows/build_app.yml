@@ -1,12 +1,9 @@
 name: Build job
 
-permissions:
-  contents: write
-
 on:
-  # Just manually for now
-  #schedule:
-  #  - cron: '0 23 * * 6'
+  # Every Saturday at 21:00 UTC
+  schedule:
+    - cron: '0 21 * * 6'
   # Manual triggers
   workflow_dispatch:
     inputs:
@@ -22,28 +19,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Repository (Latest)
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
-          repository: 'aniyomiorg/aniyomi'
+          repository: 'mihonapp/mihon'
           fetch-depth: 0
         if: github.event.inputs.git-ref == ''
       - name: Clone Repository (Custom Ref)
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         if: github.event.inputs.git-ref != ''
         with:
-          repository: 'aniyomiorg/aniyomi'
+          repository: 'Dark25/Animetail2'
           fetch-depth: 0
           ref: ${{ github.event.inputs.git-ref }}
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@2dfa2011c5b2a0f1489bf9e433881c92c1631f88 # v4.3.0
         with:
           java-version: 17
           distribution: adopt
 
+      - name: Setup Android SDK
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "build-tools;29.0.3"
+
       - name: Get previous release
         id: last_release
-        uses: InsonusK/get-latest-release@v1.1.0
+        uses: InsonusK/get-latest-release@7a9ff16c8c6b7ead5d71c0f1cc61f2703170eade # v1.1.0
         with:
           myToken: ${{ github.token }}
           exclude_types: "draft|prerelease"
@@ -55,86 +56,69 @@ jobs:
 
           commit_count=$(git rev-list --count HEAD)
           echo "COMMIT_COUNT=$commit_count" >> $GITHUB_ENV
-          current_sha=$(git rev-parse HEAD)
+          current_sha=$(git rev-parse --short HEAD)
           echo "CURRENT_SHA=$current_sha" >> $GITHUB_ENV
+
           prev_commit_count=$(echo "${{ steps.last_release.outputs.tag_name }}" | sed -e "s/^r//")
           commit_count_diff=$(expr $commit_count - $prev_commit_count)
-          [ $commit_count_diff != 0 ] || exit 1
-          commit_count_diff_plus_one=$(expr $commit_count_diff + 1)
-          prev_release_sha=$(git log --topo-order -n $commit_count_diff_plus_one --skip $commit_count_diff --max-count 1 --pretty=format:"%H")
+          prev_release_sha=$(git rev-parse --short HEAD~$commit_count_diff)
           echo "PREV_RELEASE_SHA=$prev_release_sha" >> $GITHUB_ENV
 
           echo "COMMIT_LOGS<<{delimiter}
           $(curl -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/Dark25/Animetail2/compare/$prev_release_sha...$current_sha" \
+            "https://api.github.com/repos/Dark25/animetail2/compare/$prev_release_sha...$current_sha" \
             | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
             | jq -r '.[]|"- \(.message | first) (@\(.username))"')
           {delimiter}" >> $GITHUB_ENV
 
-      - name: Set ACRA properties
-        env:
-          acraUri: ${{ secrets.ACRA_URI }}
-          acraLogin: ${{ secrets.ACRA_LOGIN }}
-          acraPassword: ${{ secrets.ACRA_PASSWORD }}
-        run: |
-          echo "ACRA_URI=$acraUri" >> acra.properties
-          echo "ACRA_LOGIN=$acraLogin" >> acra.properties
-          echo "ACRA_PASSWORD=$acraPassword" >> acra.properties
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@d156388eb19639ec20ade50009f3d199ce1e2808 # v4.1.0
 
       - name: Build APK
-        uses: gradle/gradle-command-action@v2
-        with:
-          arguments: assembleStandardPreview
+        run: ./gradlew assembleStandardPreview
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
+        uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
         with:
           releaseDirectory: app/build/outputs/apk/standard/preview
-          signingKeyBase64: ${{ secrets.DEBUG_KEYSTORE }}
-          alias: androiddebugkey
-          keyStorePassword: android
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
-
-      - name: Upload Proguard mapping file
-        uses: actions/upload-artifact@v3
-        with:
-          name: mapping.txt
-          path: app/build/outputs/mapping/standardPreview/mapping.txt
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
 
       - name: Clean up build artifacts
         run: |
           set -e
 
-          cp app/build/outputs/apk/standard/preview/app-standard-universal-preview-signed.apk aniyomi-r${{ env.COMMIT_COUNT }}.apk
-          sha=`sha256sum aniyomi-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
+          cp app/build/outputs/apk/standard/preview/app-standard-universal-preview-signed.apk animetail-r${{ env.COMMIT_COUNT }}.apk
+          sha=`sha256sum mihon-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_UNIVERSAL_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-arm64-v8a-preview-signed.apk aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
-          sha=`sha256sum aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
+          cp app/build/outputs/apk/standard/preview/app-standard-arm64-v8a-preview-signed.apk animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
+          sha=`sha256sum mihon-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARM64_V8A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-armeabi-v7a-preview-signed.apk aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
-          sha=`sha256sum aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
+          cp app/build/outputs/apk/standard/preview/app-standard-armeabi-v7a-preview-signed.apk animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
+          sha=`sha256sum mihon-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARMEABI_V7A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-x86-preview-signed.apk aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk
-          sha=`sha256sum aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
+          cp app/build/outputs/apk/standard/preview/app-standard-x86-preview-signed.apk animetail-x86-r${{ env.COMMIT_COUNT }}.apk
+          sha=`sha256sum mihon-x86-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/standard/preview/app-standard-x86_64-preview-signed.apk aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk
-          sha=`sha256sum aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
+          cp app/build/outputs/apk/standard/preview/app-standard-x86_64-preview-signed.apk animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
+          sha=`sha256sum mihon-x86_64-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_64_SHA=$sha" >> $GITHUB_ENV
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
         with:
           tag_name: r${{ env.COMMIT_COUNT }}
-          name: Aniyomi Preview r${{ env.COMMIT_COUNT }}
+          name: Animetail Preview r${{ env.COMMIT_COUNT }}
           body: |
             ### Commits
 
-            https://github.com/aniyomiorg/aniyomi/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
+            https://github.com/Dark25/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
 
             ${{ env.COMMIT_LOGS }}
 
@@ -147,21 +131,23 @@ jobs:
             | Universal | ${{ env.APK_UNIVERSAL_SHA }}
             | arm64-v8a | ${{ env.APK_ARM64_V8A_SHA }}
             | armeabi-v7a | ${{ env.APK_ARMEABI_V7A_SHA }}
-            | x86 | ${{ env.APK_X86_SHA }}
+            | x86 | ${{ env.APK_X86_SHA }} |
             | x86_64 | ${{ env.APK_X86_64_SHA }} |
+            
+            ## If you are unsure which apk to download then go with mihon-r${{ env.COMMIT_COUNT }}.apk
           files: |
-            aniyomi-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-x86-r${{ env.COMMIT_COUNT }}.apk
-            aniyomi-x86_64-r${{ env.COMMIT_COUNT }}.apk
+            animetail-r${{ env.COMMIT_COUNT }}.apk
+            animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
+            animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
+            animetail-x86-r${{ env.COMMIT_COUNT }}.apk
+            animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
           draft: ${{ github.event.inputs.dry-run != '' }}
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prune old releases
-        uses: dev-drprasad/delete-older-releases@v0.3.2
+        uses: dev-drprasad/delete-older-releases@dfbe6be2a006e9475dfcbe5b8d201f1824c2a9fe # v0.3.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
