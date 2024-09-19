@@ -80,6 +80,14 @@ jobs:
           echo "ACRA_URI=$acraUri" >> acra.properties
           echo "ACRA_LOGIN=$acraLogin" >> acra.properties
           echo "ACRA_PASSWORD=$acraPassword" >> acra.properties
+     
+      - name: Write client_secrets.json
+        uses: DamianReeves/write-file-action@v1.2
+        with:
+          path: app/src/main/assets/client_secrets.json
+          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
+          write-mode: overwrite
+
 
       - name: Build APK
         uses: gradle/gradle-command-action@v2
