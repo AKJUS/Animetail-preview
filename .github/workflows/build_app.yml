@@ -224,6 +224,43 @@ jobs:
             }]
           }' \
           ${{ secrets.DISCORD_WEBHOOK }}
+     
+      - name: Send APKs to Telegram
+        run: |
+          # Enviar Universal APK
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document="@animetail-r${{ env.COMMIT_COUNT }}.apk" \
+          -F caption="🚀 *Nuevo Release - Animetail Universal APK*\n\nSHA-256: `${{ env.APK_UNIVERSAL_SHA }}`" \
+          -F parse_mode="Markdown"
+          
+          # Enviar arm64-v8a APK
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document="@animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk" \
+          -F caption="🚀 *Nuevo Release - Animetail arm64-v8a APK*\n\nSHA-256: `${{ env.APK_ARM64_V8A_SHA }}`" \
+          -F parse_mode="Markdown"
+          
+          # Enviar armeabi-v7a APK
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document="@animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk" \
+          -F caption="🚀 *Nuevo Release - Animetail armeabi-v7a APK*\n\nSHA-256: `${{ env.APK_ARMEABI_V7A_SHA }}`" \
+          -F parse_mode="Markdown"
+          
+          # Enviar x86 APK
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document="@animetail-x86-r${{ env.COMMIT_COUNT }}.apk" \
+          -F caption="🚀 *Nuevo Release - Animetail x86 APK*\n\nSHA-256: `${{ env.APK_X86_SHA }}`" \
+          -F parse_mode="Markdown"
+          
+          # Enviar x86_64 APK
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document="@animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk" \
+          -F caption="🚀 *Nuevo Release - Animetail x86_64 APK*\n\nSHA-256: `${{ env.APK_X86_64_SHA }}`" \
+          -F parse_mode="Markdown"
 
       - name: Prune old releases
         uses: dev-drprasad/delete-older-releases@v0.3.2
