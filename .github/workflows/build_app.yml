@@ -173,6 +173,7 @@ jobs:
           curl -H "Content-Type: application/json" \
           -X POST \
           -d '{
+            "content": "**🚀 ¡Nuevo release disponible!** <@&1196139193664028764>",
             "username": "Animetail Bot",
             "avatar_url": "https://github.com/Dark25/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true",
             "embeds": [{
