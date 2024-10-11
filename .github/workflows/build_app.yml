@@ -192,33 +192,33 @@ jobs:
                 },
                 {
                   "name": "📱 **Universal APK**",
-                  "value": "[⬇️ Descargar Universal APK](https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-r${{ env.COMMIT_COUNT }}.apk)",
+                  "value": "[⬇️ Descargar Universal APK](https://github.com/Dark25/Animetail-preview/releases/download/r${{ env.COMMIT_COUNT }}/animetail-r${{ env.COMMIT_COUNT }}.apk)",
                   "inline": false
                 },
                 {
                   "name": "📲 **arm64-v8a APK**",
-                  "value": "[⬇️ Descargar arm64-v8a APK](https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk)",
+                  "value": "[⬇️ Descargar arm64-v8a APK](https://github.com/Dark25/Animetail-preview/releases/download/r${{ env.COMMIT_COUNT }}/animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk)",
                   "inline": false
                 },
                 {
                   "name": "📲 **armeabi-v7a APK**",
-                  "value": "[⬇️ Descargar armeabi-v7a APK](https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk)",
+                  "value": "[⬇️ Descargar armeabi-v7a APK](https://github.com/Dark25/Animetail-preview/releases/download/r${{ env.COMMIT_COUNT }}/animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk)",
                   "inline": false
                 },
                 {
                   "name": "📲 **x86 APK**",
-                  "value": "[⬇️ Descargar x86 APK](https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86-r${{ env.COMMIT_COUNT }}.apk)",
+                  "value": "[⬇️ Descargar x86 APK](https://github.com/Dark25/Animetail-preview/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86-r${{ env.COMMIT_COUNT }}.apk)",
                   "inline": false
                 },
                 {
                   "name": "📲 **x86_64 APK**",
-                  "value": "[⬇️ Descargar x86_64 APK](https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk)",
+                  "value": "[⬇️ Descargar x86_64 APK](https://github.com/Dark25/Animetail-preview/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk)",
                   "inline": false
                 }
               ],
               "footer": {
                 "text": "Release generado automáticamente por Animetail Bot",
-                "icon_url": "https://github.com/Dark25/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true"
+                "icon_url": "https://github.com/Dark25/Animetail-preview/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true"
               },
               "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"
             }]
