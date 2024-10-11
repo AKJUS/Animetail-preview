@@ -170,34 +170,72 @@ jobs:
 
       - name: Notify Discord
         run: |
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-          -H "Content-Type: multipart/form-data" \
-          -F "payload_json={
-            \"username\": \"GitHub Actions\",
-            \"embeds\": [{
-              \"title\": \"Nuevo Release - Animetail Preview r${{ env.COMMIT_COUNT }}\",
-              \"description\": \"Se ha creado un nuevo release para Animetail. Puedes revisar los commits y descargar las versiones APK adjuntas.\",
-              \"url\": \"https://github.com/Dark25/Animetail2/releases/tag/r${{ env.COMMIT_COUNT }}\",
-              \"color\": 3066993,
-              \"fields\": [
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "username": "GitHub Actions",
+            "embeds": [{
+              "title": "🚀 Nuevo Release - Animetail Preview r${{ env.COMMIT_COUNT }}",
+              "description": "🎉 ¡Se ha creado un nuevo release para Animetail! Revisa los commits recientes y descarga las versiones APK utilizando los botones a continuación.",
+              "url": "https://github.com/Dark25/Animetail2/releases/tag/r${{ env.COMMIT_COUNT }}",
+              "color": 3066993,
+              "fields": [
                 {
-                  \"name\": \"Commits\",
-                  \"value\": \"[Ver commits](https://github.com/Dark25/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }})\",
-                  \"inline\": false
+                  "name": "📜 Commits",
+                  "value": "[Ver commits](https://github.com/Dark25/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }})",
+                  "inline": false
                 },
                 {
-                  \"name\": \"Checksums\",
-                  \"value\": \"**Universal**: `${{ env.APK_UNIVERSAL_SHA }}`\n**arm64-v8a**: `${{ env.APK_ARM64_V8A_SHA }}`\n**armeabi-v7a**: `${{ env.APK_ARMEABI_V7A_SHA }}`\n**x86**: `${{ env.APK_X86_SHA }}`\n**x86_64**: `${{ env.APK_X86_64_SHA }}`\",
-                  \"inline\": false
+                  "name": "🔐 Checksums (SHA-256)",
+                  "value": "Verifica la integridad de los archivos utilizando los checksums proporcionados.\n\n**Universal**: `${{ env.APK_UNIVERSAL_SHA }}`\n**arm64-v8a**: `${{ env.APK_ARM64_V8A_SHA }}`\n**armeabi-v7a**: `${{ env.APK_ARMEABI_V7A_SHA }}`\n**x86**: `${{ env.APK_X86_SHA }}`\n**x86_64**: `${{ env.APK_X86_64_SHA }}`",
+                  "inline": false
                 }
               ]
-            }]
-          }" \
-          -F "file1=@animetail-r${{ env.COMMIT_COUNT }}.apk" \
-          -F "file2=@animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk" \
-          -F "file3=@animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk" \
-          -F "file4=@animetail-x86-r${{ env.COMMIT_COUNT }}.apk" \
-          -F "file5=@animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk"
+            }],
+            "components": [
+              {
+                "type": 1,
+                "components": [
+                  {
+                    "type": 2,
+                    "label": "📱 Descargar Universal APK",
+                    "style": 5,
+                    "url": "https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-r${{ env.COMMIT_COUNT }}.apk"
+                  },
+                  {
+                    "type": 2,
+                    "label": "📲 Descargar arm64-v8a APK",
+                    "style": 5,
+                    "url": "https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk"
+                  },
+                  {
+                    "type": 2,
+                    "label": "📲 Descargar armeabi-v7a APK",
+                    "style": 5,
+                    "url": "https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk"
+                  }
+                ]
+              },
+              {
+                "type": 1,
+                "components": [
+                  {
+                    "type": 2,
+                    "label": "📲 Descargar x86 APK",
+                    "style": 5,
+                    "url": "https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86-r${{ env.COMMIT_COUNT }}.apk"
+                  },
+                  {
+                    "type": 2,
+                    "label": "📲 Descargar x86_64 APK",
+                    "style": 5,
+                    "url": "https://github.com/Dark25/Animetail2/releases/download/r${{ env.COMMIT_COUNT }}/animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk"
+                  }
+                ]
+              }
+            ]
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Prune old releases
         uses: dev-drprasad/delete-older-releases@v0.3.2
