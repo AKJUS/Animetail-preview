@@ -90,7 +90,7 @@ jobs:
 
 
       - name: Build APK
-        uses: gradle/gradle-command-action@v2
+        uses: gradle/gradle-command-action@v4
         with:
           arguments: assembleStandardPreview
 
