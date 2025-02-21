@@ -24,14 +24,14 @@ jobs:
       - name: Clone Repository (Latest)
         uses: actions/checkout@v4
         with:
-          repository: 'Dark25/Animetail2'
+          repository: 'Animetailapp/Animetail'
           fetch-depth: 0
         if: github.event.inputs.git-ref == ''
       - name: Clone Repository (Custom Ref)
         uses: actions/checkout@v4
         if: github.event.inputs.git-ref != ''
         with:
-          repository: 'Dark25/Animetail2'
+          repository: 'Animetailapp/Animetail'
           fetch-depth: 0
           ref: ${{ github.event.inputs.git-ref }}
 
@@ -66,7 +66,7 @@ jobs:
 
           echo "COMMIT_LOGS<<{delimiter}
           $(curl -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/Dark25/Animetail2/compare/$prev_release_sha...$current_sha" \
+            "https://api.github.com/repos/Animetailapp/Animetail/compare/$prev_release_sha...$current_sha" \
             | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
             | jq -r '.[]|"- \(.message | first) (@\(.username))"')
           {delimiter}" >> $GITHUB_ENV
@@ -142,7 +142,7 @@ jobs:
           body: |
             ### Commits
 
-            https://github.com/Dark25/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
+            https://github.com/Animetailapp/Animetail/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }}
 
             ${{ env.COMMIT_LOGS }}
 
@@ -175,19 +175,19 @@ jobs:
           -d '{
             "content": "**🚀 ¡Nuevo release disponible!** <@&1196139193664028764>",
             "username": "Animetail Bot",
-            "avatar_url": "https://github.com/Dark25/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true",
+            "avatar_url": "https://github.com/Animetailapp/Animetailapp/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true",
             "embeds": [{
               "title": "🚀 Nuevo Release - Animetail Preview r${{ env.COMMIT_COUNT }}",
               "description": "🎉 **¡Se ha creado un nuevo release para Animetail!**\n\nPuedes revisar los commits recientes, descargar las APKs y verificar los checksums a continuación. 👇\n\n### 🛠️ **Checksums**\n\n| Variant    | SHA-256 |\n| ---------- | ----------------------------------------- |\n| Universal  | `${{ env.APK_UNIVERSAL_SHA }}`            |\n| arm64-v8a  | `${{ env.APK_ARM64_V8A_SHA }}`            |\n| armeabi-v7a| `${{ env.APK_ARMEABI_V7A_SHA }}`          |\n| x86        | `${{ env.APK_X86_SHA }}`                  |\n| x86_64     | `${{ env.APK_X86_64_SHA }}`               |",
-              "url": "https://github.com/Dark25/Animetail2/releases/tag/r${{ env.COMMIT_COUNT }}",
+              "url": "https://github.com/Animetailapp/Animetail-preview/releases/tag/r${{ env.COMMIT_COUNT }}",
               "color": 3066993,
               "thumbnail": {
-                "url": "https://github.com/Dark25/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_logo_monochrome.png?raw=true"
+                "url": "https://github.com/Animetailapp/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_logo_monochrome.png?raw=true"
               },
               "fields": [
                 {
                   "name": "📜 **Commits**",
-                  "value": "[Ver commits recientes](https://github.com/Animetailapp/Animetail2/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }})",
+                  "value": "[Ver commits recientes](https://github.com/Animetailapp/Animetail/compare/${{ env.PREV_RELEASE_SHA }}...${{ env.CURRENT_SHA }})",
                   "inline": false
                 },
                 {
@@ -218,7 +218,7 @@ jobs:
               ],
               "footer": {
                 "text": "Release generado automáticamente por Animetail Bot",
-                "icon_url": "https://github.com/Dark25/Animetail2/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true"
+                "icon_url": "https://github.com/Animetailapp/Animetail/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true"
               },
               "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"
             }]
