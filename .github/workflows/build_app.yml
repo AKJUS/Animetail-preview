@@ -114,7 +114,7 @@ jobs:
         run: |
           set -e
 
-          cp app/build/outputs/apk/standard/preview/app-standard-universal-preview-signed.apk animetail-r${{ env.COMMIT_COUNT }}.apk
+          cp app/build/outputs/apk/preview/app-universal-preview-signed.apk animetail-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_UNIVERSAL_SHA=$sha" >> $GITHUB_ENV
 
