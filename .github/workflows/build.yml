@@ -4,9 +4,9 @@ permissions:
   contents: write
 
 on:
-  # Just manually for now
-  #schedule:
-  #  - cron: '0 23 * * 6'
+  # Every day at 17:30 UTC
+  schedule:
+    - cron: '30 17 * * *'
   # Manual triggers
   workflow_dispatch:
     inputs:
@@ -16,19 +16,84 @@ on:
       dry-run:
         description: Creates a draft release
         required: false
+        type: boolean
+
+env:
+  MIHON_GITHUB_RELEASE: true
+  ANIMETAIL_GITHUB_RELEASE: true
 
 jobs:
-  build-app:
-    runs-on: ubuntu-latest
+  check:
+    name: Check for new commits
+    runs-on: 'ubuntu-24.04'
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+      commit-count: ${{ steps.check.outputs.commit-count }}
+      current-sha: ${{ steps.check.outputs.current-sha }}
+      prev-tag: ${{ steps.check.outputs.prev-tag }}
     steps:
       - name: Clone Repository (Latest)
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: 'Animetailapp/Animetail'
+          fetch-depth: 0
+          filter: blob:none
+        if: github.event.inputs.git-ref == ''
+      - name: Clone Repository (Custom Ref)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: github.event.inputs.git-ref != ''
+        with:
+          repository: 'Animetailapp/Animetail'
+          fetch-depth: 0
+          filter: blob:none
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Compare against latest release
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          commit_count=$(git rev-list --count HEAD)
+          echo "commit-count=$commit_count" >> $GITHUB_OUTPUT
+          echo "current-sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+          tag_name=$(gh release list --repo Animetailapp/Animetail-preview --exclude-drafts --exclude-pre-releases --json tagName --limit 1 --jq 'select(length > 0) | .[0].tagName')
+          if [ -n "$tag_name" ]; then
+            echo "Latest Tag: $tag_name"
+          else
+            echo "No previous tag found, defaulting to r0"
+            tag_name="r0"
+          fi
+          echo "prev-tag=$tag_name" >> $GITHUB_OUTPUT
+
+          prev_commit_count=$(echo "$tag_name" | sed -e "s/^r//")
+          if [ "$commit_count" -le "$prev_commit_count" ] && [ "${{ github.event_name }}" = 'schedule' ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "No new commits since $tag_name, skipping build"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build app
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    runs-on: 'ubuntu-24.04'
+    env:
+      COMMIT_COUNT: ${{ needs.check.outputs.commit-count }}
+      CURRENT_SHA: ${{ needs.check.outputs.current-sha }}
+      PREV_TAG: ${{ needs.check.outputs.prev-tag }}
+    steps:
+      - name: Clone Repository (Latest)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: 'Animetailapp/Animetail'
           fetch-depth: 0
         if: github.event.inputs.git-ref == ''
       - name: Clone Repository (Custom Ref)
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: github.event.inputs.git-ref != ''
         with:
           repository: 'Animetailapp/Animetail'
@@ -36,40 +101,10 @@ jobs:
           ref: ${{ github.event.inputs.git-ref }}
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
-          java-version: 17
-          distribution: adopt
-
-      - name: Get previous release
-        id: last_release
-        uses: InsonusK/get-latest-release@v1.1.0
-        with:
-          myToken: ${{ github.token }}
-          exclude_types: "draft|prerelease"
-          view_top: 1
-
-      - name: Prepare build
-        run: |
-          set -e
-
-          commit_count=$(git rev-list --count HEAD)
-          echo "COMMIT_COUNT=$commit_count" >> $GITHUB_ENV
-          current_sha=$(git rev-parse HEAD)
-          echo "CURRENT_SHA=$current_sha" >> $GITHUB_ENV
-          prev_commit_count=$(echo "${{ steps.last_release.outputs.tag_name }}" | sed -e "s/^r//")
-          commit_count_diff=$(expr $commit_count - $prev_commit_count)
-          [ $commit_count_diff != 0 ] || exit 1
-          commit_count_diff_plus_one=$(expr $commit_count_diff + 1)
-          prev_release_sha=$(git log --topo-order -n $commit_count_diff_plus_one --skip $commit_count_diff --max-count 1 --pretty=format:"%H")
-          echo "PREV_RELEASE_SHA=$prev_release_sha" >> $GITHUB_ENV
-
-          echo "COMMIT_LOGS<<{delimiter}
-          $(curl -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/Animetailapp/Animetail/compare/$prev_release_sha...$current_sha" \
-            | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
-            | jq -r '.[]|"- \(.message | first) (@\(.username))"')
-          {delimiter}" >> $GITHUB_ENV
+          java-version: 25
+          distribution: temurin
 
       - name: Set ACRA properties
         env:
@@ -88,56 +123,68 @@ jobs:
           contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
           write-mode: overwrite
 
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
       - name: Build APK
-        uses: gradle/gradle-command-action@v2
-        with:
-          arguments: assemblePreview -Penable-updater
-
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: app/build/outputs/apk/preview
-          signingKeyBase64: ${{ secrets.DEBUG_KEYSTORE }}
-          alias: androiddebugkey
-          keyStorePassword: android
+        run: ./gradlew assembleNightly -Pinclude-telemetry -Penable-updater
         env:
-          BUILD_TOOLS_VERSION: "34.0.0"
+          storeFileBase64: ${{ secrets.SIGNING_KEY || secrets.DEBUG_KEYSTORE }}
+          storePassword: ${{ secrets.KEY_STORE_PASSWORD || 'android' }}
+          keyAlias: ${{ secrets.ALIAS || 'androiddebugkey' }}
+          keyPassword: ${{ secrets.KEY_PASSWORD || 'android' }}
 
-      - name: Upload Proguard mapping file
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapping.txt
-          path: app/build/outputs/mapping/standardPreview/mapping.txt
+      - name: Prepare changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          prev_commit_count=$(echo "${{ env.PREV_TAG }}" | sed -e "s/^r//")
+          commit_count_diff=$(expr ${{ env.COMMIT_COUNT }} - $prev_commit_count)
+          if [ "$commit_count_diff" -gt 0 ]; then
+            prev_release_sha=$(git rev-parse --short HEAD~$commit_count_diff)
+          else
+            prev_release_sha=$(git rev-parse --short HEAD~1)
+          fi
+          echo "PREV_RELEASE_SHA=$prev_release_sha" >> $GITHUB_ENV
+
+          echo "COMMIT_LOGS<<{delimiter}
+          $(curl -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/Animetailapp/Animetail/compare/$prev_release_sha...${{ env.CURRENT_SHA }}" \
+            | jq '[.commits[]|{message:(.commit.message | split("\n")), username:.author.login}]' \
+            | jq -r '.[]|"- \(.message | first) (@\(.username))"')
+          {delimiter}" >> $GITHUB_ENV
 
       - name: Clean up build artifacts
         run: |
           set -e
 
-          cp app/build/outputs/apk/preview/app-universal-preview-signed.apk animetail-r${{ env.COMMIT_COUNT }}.apk
+          mv app/build/outputs/apk/nightly/app-universal-nightly.apk animetail-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_UNIVERSAL_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/preview/app-arm64-v8a-preview-signed.apk animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
+          mv app/build/outputs/apk/nightly/app-arm64-v8a-nightly.apk animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARM64_V8A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/preview/app-armeabi-v7a-preview-signed.apk animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
+          mv app/build/outputs/apk/nightly/app-armeabi-v7a-nightly.apk animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_ARMEABI_V7A_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/preview/app-x86-preview-signed.apk animetail-x86-r${{ env.COMMIT_COUNT }}.apk
+          mv app/build/outputs/apk/nightly/app-x86-nightly.apk animetail-x86-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-x86-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_SHA=$sha" >> $GITHUB_ENV
 
-          cp app/build/outputs/apk/preview/app-x86_64-preview-signed.apk animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
+          mv app/build/outputs/apk/nightly/app-x86_64-nightly.apk animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
           sha=`sha256sum animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk | awk '{ print $1 }'`
           echo "APK_X86_64_SHA=$sha" >> $GITHUB_ENV
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: r${{ env.COMMIT_COUNT }}
-          name: Animetail Preview r${{ env.COMMIT_COUNT }}
+          name: Animetail Nightly r${{ env.COMMIT_COUNT }}
           body: |
             ### Commits
 
@@ -151,23 +198,29 @@ jobs:
 
             | Variant | SHA-256 |
             | ------- | ------- |
-            | Universal | ${{ env.APK_UNIVERSAL_SHA }}
-            | arm64-v8a | ${{ env.APK_ARM64_V8A_SHA }}
-            | armeabi-v7a | ${{ env.APK_ARMEABI_V7A_SHA }}
-            | x86 | ${{ env.APK_X86_SHA }}
+            | Universal | ${{ env.APK_UNIVERSAL_SHA }} |
+            | arm64-v8a | ${{ env.APK_ARM64_V8A_SHA }} |
+            | armeabi-v7a | ${{ env.APK_ARMEABI_V7A_SHA }} |
+            | x86 | ${{ env.APK_X86_SHA }} |
             | x86_64 | ${{ env.APK_X86_64_SHA }} |
+
+            <!-->
+            > [!TIP]
+            >
+            > ### If you are unsure which version to download then go with `animetail-r${{ env.COMMIT_COUNT }}.apk`
           files: |
             animetail-r${{ env.COMMIT_COUNT }}.apk
             animetail-arm64-v8a-r${{ env.COMMIT_COUNT }}.apk
             animetail-armeabi-v7a-r${{ env.COMMIT_COUNT }}.apk
             animetail-x86-r${{ env.COMMIT_COUNT }}.apk
             animetail-x86_64-r${{ env.COMMIT_COUNT }}.apk
-          draft: ${{ github.event.inputs.dry-run != '' }}
+          draft: ${{ github.event.inputs.dry-run == 'true' || github.event.inputs.dry-run == true }}
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify Discord
+        if: ${{ !(github.event.inputs.dry-run == 'true' || github.event.inputs.dry-run == true) }}
         run: |
           curl -H "Content-Type: application/json" \
           -X POST \
@@ -176,7 +229,7 @@ jobs:
             "username": "Animetail Bot",
             "avatar_url": "https://github.com/Animetailapp/Animetailapp/blob/master/app/src/debug/res/mipmap-xxhdpi/ic_launcher.png?raw=true",
             "embeds": [{
-              "title": "🚀 Nuevo Release - Animetail Preview r${{ env.COMMIT_COUNT }}",
+              "title": "🚀 Nuevo Release - Animetail Nightly r${{ env.COMMIT_COUNT }}",
               "description": "🎉 **¡Se ha creado un nuevo release para Animetail!**\n\nPuedes revisar los commits recientes, descargar las APKs y verificar los checksums a continuación. 👇\n\n### 🛠️ **Checksums**\n\n| Variant    | SHA-256 |\n| ---------- | ----------------------------------------- |\n| Universal  | `${{ env.APK_UNIVERSAL_SHA }}`            |\n| arm64-v8a  | `${{ env.APK_ARM64_V8A_SHA }}`            |\n| armeabi-v7a| `${{ env.APK_ARMEABI_V7A_SHA }}`          |\n| x86        | `${{ env.APK_X86_SHA }}`                  |\n| x86_64     | `${{ env.APK_X86_64_SHA }}`               |",
               "url": "https://github.com/Animetailapp/Animetail-preview/releases/tag/r${{ env.COMMIT_COUNT }}",
               "color": 3066993,
@@ -225,9 +278,9 @@ jobs:
           ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Prune old releases
-        uses: dev-drprasad/delete-older-releases@v0.3.2
+        uses: dev-drprasad/delete-older-releases@dfbe6be2a006e9475dfcbe5b8d201f1824c2a9fe # v0.3.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          keep_latest: 28
+          keep_latest: 365
           delete_tags: true
