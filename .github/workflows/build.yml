@@ -130,7 +130,7 @@ jobs:
         run: ./gradlew assembleNightly -Penable-updater
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@a391126fec7ec364d9f6cf3ddc46aa1d8fa31502 # v1.0.4
+        uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/apk/nightly
           signingKeyBase64: ${{ secrets.DEBUG_KEYSTORE }}
