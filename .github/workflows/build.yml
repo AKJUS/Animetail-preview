@@ -127,7 +127,7 @@ jobs:
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Build APK
-        run: ./gradlew assembleNightly -Pinclude-telemetry -Penable-updater
+        run: ./gradlew assembleNightly -Penable-updater
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@a391126fec7ec364d9f6cf3ddc46aa1d8fa31502 # v1.0.4
